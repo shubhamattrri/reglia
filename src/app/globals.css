@@ -1,0 +1,315 @@
+@import "tailwindcss" source("..");
+
+:root {
+  --ink: #f6efe2;
+  --ink-deep: #ece0cb;
+  --navy: #ece0cb;
+  --champagne: #8a5a2e;
+  --champagne-bright: #6e4322;
+  --warm-white: #3b2819;
+  --muted: #7b6450;
+  --background: var(--ink);
+  --foreground: var(--warm-white);
+  --card: var(--ink-deep);
+  --primary: var(--champagne);
+  --primary-foreground: var(--ink);
+  --secondary: #e4d5bc;
+  --accent: #d9c4a3;
+  --destructive: #a63d32;
+  --muted-foreground: var(--muted);
+  --border: color-mix(in srgb, var(--champagne) 28%, transparent);
+  --button-bg: var(--champagne);
+  --button-text: var(--ink);
+  --color-primary: var(--champagne);
+  --color-secondary: #e4d5bc;
+  --color-accent: #d9c4a3;
+  --destructive-foreground: #ffffff;
+  --color-destructive: #a63d32;
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-chart-1: #8a5a2e;
+  --color-chart-3: #8b6b4a;
+  --color-chart-4: #3d2a1c;
+  --color-chart-5: #a07c4f;
+  --color-1: 0 100% 63%;
+  --color-2: 270 100% 63%;
+  --color-3: 210 100% 63%;
+  --color-4: 195 100% 63%;
+  --color-5: 90 100% 63%;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-ink-deep: var(--ink-deep);
+  --color-navy: var(--navy);
+  --color-champagne: var(--champagne);
+  --color-champagne-bright: var(--champagne-bright);
+  --color-warm-white: var(--warm-white);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-color-1: hsl(var(--color-1));
+  --color-color-2: hsl(var(--color-2));
+  --color-color-3: hsl(var(--color-3));
+  --color-color-4: hsl(var(--color-4));
+  --color-color-5: hsl(var(--color-5));
+  --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
+  --animate-luxury-rise: luxury-rise 0.7s ease-out both;
+  --animate-luxury-fade: luxury-fade 0.9s ease-out 0.12s both;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-heading: "Playfair Display", Georgia, serif;
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
+  --font-royal: "Cinzel", "Playfair Display", Georgia, serif;
+  --color-lux-black: var(--ink);
+  --color-lux-panel: var(--ink-deep);
+  --color-lux-green: color-mix(in srgb, var(--champagne) 16%, var(--ink));
+  --color-lux-gold: var(--champagne);
+  --color-lux-gold-soft: var(--champagne-bright);
+}
+
+@keyframes rainbow {
+  0% {
+    background-position: 0%;
+  }
+  100% {
+    background-position: 200%;
+  }
+}
+
+@keyframes luxury-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes luxury-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--ink);
+  color: var(--warm-white);
+  font-family: var(--font-sans), sans-serif;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html.preloader-lock,
+html.preloader-lock body {
+  overflow: hidden;
+  height: 100%;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--champagne) 28%, transparent);
+  color: var(--warm-white);
+}
+
+.font-display {
+  font-family: var(--font-heading), Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.mask-fade-left {
+  mask-image: linear-gradient(90deg, transparent 0%, black 28%, black 100%);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    black 28%,
+    black 100%
+  );
+}
+
+/* Evasion template motion (used alongside GSAP) */
+@keyframes evasion-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes evasion-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes evasion-reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes evasion-reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes evasion-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-evasion-slide-up {
+  animation: evasion-slide-up 0.85s cubic-bezier(0.86, 0, 0.07, 1) forwards;
+}
+
+.animate-evasion-reveal-up {
+  animation: evasion-reveal-up 0.8s ease-out forwards;
+}
+
+.animate-evasion-reveal-left {
+  animation: evasion-reveal-left 0.8s ease-out forwards;
+}
+
+.animate-evasion-reveal-right {
+  animation: evasion-reveal-right 0.8s ease-out forwards;
+}
+
+.animate-evasion-scale-in {
+  animation: evasion-scale-in 0.65s ease-out forwards;
+}
+
+.evasion-stage {
+  --evasion-bg: #ffffff;
+  --evasion-fg: #0a0a0a;
+  color: var(--evasion-fg);
+  background: var(--evasion-bg);
+}
+
+@keyframes evasion-kenburns {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.08) translate3d(0, -1.6%, 0);
+  }
+}
+
+.evasion-kenburns {
+  animation: evasion-kenburns 16s ease-in-out alternate infinite;
+  will-change: transform;
+}
+
+@keyframes evasion-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.evasion-drift {
+  animation: evasion-drift 42s linear infinite;
+  will-change: transform;
+}
+
+.evasion-stage .evasion-drift:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Soft scrollbar for desktop cinematic feel */
+@media (min-width: 900px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--ink);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--champagne) 55%, var(--ink));
+  }
+}
+
+/* Booking slip: notches at both ends of the perforation and one on the stub's outer edge */
+.regalia-ticket {
+  --stub: 190px;
+}
+@media (min-width: 640px) {
+  .regalia-ticket {
+    --notch: 13px;
+    --cut: calc(100% - var(--stub));
+    -webkit-mask-image:
+      radial-gradient(circle var(--notch) at var(--cut) 0, #0000 98%, #000),
+      radial-gradient(circle var(--notch) at var(--cut) 100%, #0000 98%, #000),
+      radial-gradient(circle var(--notch) at 100% 50%, #0000 98%, #000);
+    -webkit-mask-composite: source-in, source-in, source-over;
+    mask-image:
+      radial-gradient(circle var(--notch) at var(--cut) 0, #0000 98%, #000),
+      radial-gradient(circle var(--notch) at var(--cut) 100%, #0000 98%, #000),
+      radial-gradient(circle var(--notch) at 100% 50%, #0000 98%, #000);
+    mask-composite: intersect, intersect, add;
+  }
+}

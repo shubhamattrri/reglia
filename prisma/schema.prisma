@@ -1,0 +1,787 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  ACTIVE
+  CANCELLED
+  SUSPENDED
+  EXPIRED
+  REVOKED
+}
+
+enum MemberAccountStatus {
+  ACTIVE
+  DEACTIVATED
+}
+
+enum CardStatus {
+  ACTIVE
+  LOST
+  REPLACED
+  REVOKED
+}
+
+/// Status printed on the back of the member's card (separate from the physical card lifecycle).
+enum CardBackStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
+enum CardPanelStyle {
+  GLASS
+  TRANSPARENT
+}
+
+enum RequestStatus {
+  SUBMITTED
+  QUOTE
+  APPROVAL
+  PAYMENT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageRole {
+  MEMBER
+  CONCIERGE
+}
+
+/// ADMIN = supervisor desk, STAFF = staff assister, MEMBER = user.
+enum UserRole {
+  ADMIN
+  STAFF
+  MEMBER
+}
+
+enum StaffStatus {
+  ACTIVE
+  INACTIVE
+  BUSY
+  /// Self-registered applicant awaiting admin approval; cannot sign in.
+  PENDING
+}
+
+enum EscalationStatus {
+  OPEN
+  RESOLVED
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MediaType {
+  NONE
+  IMAGE
+  VIDEO
+}
+
+/// Machine-readable tier used in REGALIA IDs and Membership Codes.
+enum TierCode {
+  PRV
+  SIG
+  PRE
+  SOV
+  IMP
+}
+
+enum WordStatus {
+  AVAILABLE
+  RESERVED
+  ISSUED
+  RETIRED
+}
+
+enum CredentialStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
+model Tier {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  subtitle    String        @db.VarChar(500)
+  summary     String        @db.Text
+  accent      String
+  metalFrom   String
+  metalTo     String
+  frontImage  String?       @db.Text
+  backImage   String?       @db.Text
+  tagline     String        @default("") @db.VarChar(500)
+  motto       String        @default("") @db.VarChar(500)
+  price       Int           @default(0)
+  currency    String        @default("GBP")
+  /// Registry tier code; null means this tier cannot be issued credentials yet.
+  code        TierCode?     @unique
+  /// Positions of the card-back details and QR panels for every card of this tier; null keeps the standard layout.
+  cardLayout  Json?         @map("card_layout")
+  /// Backdrop behind the printed details on every card of this tier; null means GLASS.
+  cardPanelStyle CardPanelStyle? @map("card_panel_style")
+  /// Position, size and colour of the holder name, validity and card number on the card front; null keeps the standard layout.
+  cardFrontLayout Json?        @map("card_front_layout")
+  /// Gating order for concierge services: Signature 1, Prestige 2, Sovereign 3, Imperium 4.
+  tierRank    Int           @default(1) @map("tier_rank")
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  features    TierFeature[]
+  memberships Membership[]
+  plans       Plan[]
+  services    Service[]
+  upgradesFrom MembershipUpgradeRequest[] @relation("UpgradeOldTier")
+  upgradesTo   MembershipUpgradeRequest[] @relation("UpgradeNewTier")
+}
+
+model TierFeature {
+  id        String @id @default(cuid())
+  tierId    String
+  label     String @db.VarChar(500)
+  icon      String @default("Sparkles")
+  sortOrder Int    @default(0)
+  tier      Tier   @relation(fields: [tierId], references: [id], onDelete: Cascade)
+}
+
+model Member {
+  id               String                 @id @default(cuid())
+  /// Internal identity every public credential maps back to. Never shown publicly.
+  memberUuid       String                 @unique @default(uuid()) @map("member_uuid") @db.Char(36)
+  /// Rendered REGALIA ID (RGL · TIER · YY · NNNN). Null until the first approval issues it.
+  regaliaId        String?                @unique @db.VarChar(40)
+  /// Separator-insensitive lookup key for regaliaId (hex of the normalised string).
+  regaliaKey       String?                @unique @map("regalia_key") @db.VarChar(255)
+  tierCode         TierCode?              @map("tier_code")
+  issueYear        Int?                   @map("issue_year")
+  /// Global registry number (NNNN). Allocated once, never reused, survives tier upgrades.
+  registrySequence Int?                   @unique @map("registry_sequence")
+  regaliaIssuedAt  DateTime?              @map("regalia_issued_at")
+  /// Pre-registry identifier kept for audit after re-issue.
+  legacyRegaliaId  String?                @map("legacy_regalia_id")
+  fullName         String
+  email            String                 @unique
+  passwordHash     String?
+  phone            String?
+  /// As printed on the member's identity document.
+  dateOfBirth      DateTime?              @map("date_of_birth") @db.Date
+  address          String?                @db.VarChar(300)
+  /// Public profile photo served from /api/uploads/.
+  avatarUrl        String?                @map("avatar_url") @db.VarChar(255)
+  /// DEACTIVATED blocks sign-in and ends any open session until an admin reactivates the account.
+  accountStatus    MemberAccountStatus    @default(ACTIVE) @map("account_status")
+  deactivatedAt    DateTime?              @map("deactivated_at")
+  deactivationNote String?                @map("deactivation_note") @db.VarChar(300)
+  createdAt        DateTime               @default(now())
+  memberships      Membership[]
+  preferences      Preference[]
+  messages         Message[]
+  payments         Payment[]
+  chatThread       ChatThread?
+  documents        MemberDocument[]
+  credentials      MembershipCredential[]
+  savedCards       SavedCard[]
+  subscriptions    UserSubscription[]
+  serviceRequests  ServiceRequest[]
+  upgradeRequests  MembershipUpgradeRequest[]
+  notifications    Notification[]
+}
+
+/// One tier-specific Membership Code issuance. Upgrades add a new row; old rows stay for audit.
+model MembershipCredential {
+  id                  String           @id @default(cuid())
+  memberUuid          String           @map("member_uuid") @db.Char(36)
+  membershipId        String?          @map("membership_id")
+  tierCode            TierCode         @map("tier_code")
+  issueYear           Int              @map("issue_year")
+  registrySequence    Int              @map("registry_sequence")
+  /// REGALIA ID as rendered when this code was issued.
+  regaliaId           String           @map("regalia_id") @db.VarChar(40)
+  membershipWord      String?          @map("membership_word") @db.VarChar(40)
+  membershipKey       String           @map("membership_key") @db.Char(2)
+  membershipSignifier String           @map("membership_signifier") @db.VarChar(4)
+  membershipSerial    String           @map("membership_serial") @db.Char(4)
+  membershipCode      String           @unique @map("membership_code") @db.VarChar(80)
+  /// Exact (byte-level) uniqueness and lookup key for membershipCode.
+  codeKey             String           @unique @map("code_key") @db.VarChar(255)
+  status              CredentialStatus @default(PENDING) @map("membership_status")
+  issuedAt            DateTime?        @map("issued_at")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  endedAt             DateTime?        @map("ended_at")
+  endReason           String?          @map("end_reason") @db.VarChar(40)
+  member              Member           @relation(fields: [memberUuid], references: [memberUuid], onDelete: Cascade)
+  membership          Membership?      @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  word                RegistryWord?
+
+  @@index([memberUuid])
+  @@index([membershipId])
+  @@index([status])
+  @@map("membership_credentials")
+}
+
+/// Approved luxury-word pool. A word is held by at most one credential at a time and never reissued once retired.
+model RegistryWord {
+  id           String                @id @default(cuid())
+  tierCode     TierCode              @map("tier_code")
+  word         String                @db.VarChar(40)
+  status       WordStatus            @default(AVAILABLE) @map("word_status")
+  memberUuid   String?               @map("member_uuid") @db.Char(36)
+  credentialId String?               @unique @map("credential_id")
+  reservedAt   DateTime?             @map("reserved_at")
+  issuedAt     DateTime?             @map("issued_at")
+  retiredAt    DateTime?             @map("retired_at")
+  credential   MembershipCredential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
+
+  @@unique([tierCode, word])
+  @@index([tierCode, status])
+  @@map("registry_words")
+}
+
+/// Monotonic counters (e.g. the global registry sequence). Rows only ever increment.
+model RegistryCounter {
+  name  String @id @db.VarChar(40)
+  value Int    @default(0)
+
+  @@map("registry_counters")
+}
+
+model Membership {
+  id                      String                 @id @default(cuid())
+  memberId                String
+  tierId                  String
+  membershipNo            String                 @unique
+  membershipCode          String                 @unique
+  status                  MembershipStatus       @default(PENDING)
+  issuedAt                DateTime               @default(now())
+  validThru               DateTime
+  renewedAt               DateTime?
+  approvedAt              DateTime?
+  cancelledAt             DateTime?
+  applicationNote         String                 @default("") @db.Text
+  accessLevel             String                 @default("STANDARD")
+  conciergeLine           String                 @default("+44 20 7946 0184")
+  /// Card-back fields edited from the admin desk. Null means "derive from the membership".
+  cardValidityPeriod      String?                @map("card_validity_period") @db.VarChar(40)
+  cardStatus              CardBackStatus?        @map("card_status")
+  /// JSON array of privilege strings; null falls back to the tier's features.
+  adminServicesPrivileges Json?                  @map("admin_services_privileges")
+  qrCodePayload           String?                @map("qr_code_payload") @db.VarChar(512)
+  /// Staff id of the supervisor who last edited the card back, or "master" for the master admin login.
+  lastUpdatedByAdminId    String?                @map("last_updated_by_admin_id") @db.VarChar(36)
+  lastUpdatedAt           DateTime?              @map("last_updated_at")
+  member                  Member                 @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tier                    Tier                   @relation(fields: [tierId], references: [id])
+  cards                   PhysicalCard[]
+  requests                ConciergeRequest[]
+  bookings                Booking[]
+  history                 ServiceHistory[]
+  payments                Payment[]
+  credentials             MembershipCredential[]
+  subscriptions           UserSubscription[]
+  serviceRequests         ServiceRequest[]
+  upgradeRequests         MembershipUpgradeRequest[]
+}
+
+enum PlanDurationType {
+  WEEK
+  MONTH
+  YEAR
+  CUSTOM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+/// Admin-configured membership durations. `durationValue` is always a number of days.
+model Plan {
+  id            Int                @id @default(autoincrement())
+  name          String             @db.VarChar(100)
+  durationType  PlanDurationType   @map("duration_type")
+  durationValue Int                @map("duration_value")
+  price         Decimal            @db.Decimal(10, 2)
+  /// Card tier this plan grants; plans without a tier are not offered at checkout.
+  tierId        String?            @map("tier_id")
+  /// Retired plans stay for existing subscriptions but are no longer sold.
+  isActive      Boolean            @default(true) @map("is_active")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  tier          Tier?              @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  subscriptions UserSubscription[]
+  payments      Payment[]
+
+  @@index([tierId, isActive])
+  @@map("plans")
+}
+
+/// Gateway tokens only: the card number and CVC never reach this database.
+model SavedCard {
+  id                     Int      @id @default(autoincrement())
+  userId                 String   @map("user_id")
+  gatewayCustomerId      String   @map("gateway_customer_id") @db.VarChar(255)
+  gatewayPaymentMethodId String   @map("gateway_payment_method_id") @db.VarChar(255)
+  cardBrand              String   @map("card_brand") @db.VarChar(50)
+  cardLast4              String   @map("card_last4") @db.VarChar(4)
+  expMonth               Int      @map("exp_month")
+  expYear                Int      @map("exp_year")
+  isDefault              Boolean  @default(true) @map("is_default")
+  createdAt              DateTime @default(now()) @map("created_at")
+  member                 Member   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isDefault])
+  @@map("saved_cards")
+}
+
+model UserSubscription {
+  id           Int                @id @default(autoincrement())
+  userId       String             @map("user_id")
+  planId       Int                @map("plan_id")
+  /// The card this subscription keeps valid; its validThru mirrors expiryDate.
+  membershipId String?            @map("membership_id")
+  startDate    DateTime           @map("start_date")
+  expiryDate   DateTime           @map("expiry_date")
+  status       SubscriptionStatus @default(ACTIVE)
+  member       Member             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         Plan               @relation(fields: [planId], references: [id])
+  membership   Membership?        @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([status, expiryDate])
+  @@index([membershipId])
+  @@map("user_subscriptions")
+}
+
+model PhysicalCard {
+  id           String     @id @default(cuid())
+  membershipId String
+  serialNumber String     @unique
+  qrToken      String     @unique
+  nfcToken     String     @unique
+  status       CardStatus @default(ACTIVE)
+  issuedAt     DateTime   @default(now())
+  replacedById String?
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+model ConciergeRequest {
+  id              String        @id @default(cuid())
+  membershipId    String
+  title           String        @db.VarChar(255)
+  category        String
+  details         String        @db.Text
+  status          RequestStatus @default(SUBMITTED)
+  quoteAmount     Float?
+  quoteNotes      String?       @db.Text
+  invoiceRef      String?
+  paidAmount      Float?
+  priority        String        @default("NORMAL")
+  staffNote       String?       @db.Text
+  assignedStaffId String?
+  assignedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  membership      Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  assignedStaff   Staff?        @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+
+  @@index([assignedStaffId])
+}
+
+model ServiceCategory {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  name      String
+  icon      String  @default("Sparkles")
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+model VerificationLog {
+  id         String   @id @default(cuid())
+  method     String
+  outcome    String
+  tokenHint  String
+  cardId     String?
+  serial     String?
+  regaliaId  String?
+  memberName String?
+  ip         String?
+  userAgent  String?  @db.Text
+  createdAt  DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  type      String
+  message   String   @db.Text
+  meta      String?  @db.Text
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id           String     @id @default(cuid())
+  membershipId String
+  title        String     @db.VarChar(255)
+  category     String
+  vendor       String?
+  date         DateTime?
+  status       String     @default("CONFIRMED")
+  amount       Float?
+  createdAt    DateTime   @default(now())
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  memberId  String
+  fromRole  MessageRole
+  body      String      @db.Text
+  createdAt DateTime    @default(now())
+  member    Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model Preference {
+  id       String @id @default(cuid())
+  memberId String
+  key      String
+  value    String @db.Text
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.LongText
+}
+
+model Payment {
+  id             String         @id @default(cuid())
+  memberId       String?
+  member         Member?        @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  membershipId   String?
+  membership     Membership?    @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  amount         Float
+  currency       String         @default("GBP")
+  status         String         @default("PENDING")
+  method         String         @default("BANK")
+  gateway        String         @default("MANUAL")
+  gatewayRef     String?
+  reference      String?
+  note           String?        @db.Text
+  webhookAt      DateTime?
+  verifiedAt     DateTime?
+  verifiedBy     String?
+  overrideNote   String?        @db.Text
+  /// Plan bought at checkout; the subscription starts when the membership is approved.
+  planId         Int?           @map("plan_id")
+  plan           Plan?          @relation(fields: [planId], references: [id], onDelete: SetNull)
+  /// Client-supplied key so a retried renewal never charges twice.
+  idempotencyKey String?        @unique @map("idempotency_key") @db.VarChar(80)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  audits         PaymentAudit[]
+}
+
+model PaymentAudit {
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  action     String
+  fromStatus String
+  toStatus   String
+  actor      String
+  note       String?  @db.Text
+  createdAt  DateTime @default(now())
+}
+
+/// A member's assistance request and its live chat.
+/// status: REQUESTED (pending) → OPEN (in progress) → ESCALATED (escalated to admin) → CLOSED (resolved).
+model ChatThread {
+  id              String            @id @default(cuid())
+  memberId        String            @unique
+  member          Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  subject         String            @default("") @db.VarChar(200)
+  category        String            @default("") @db.VarChar(80)
+  status          String            @default("REQUESTED") @db.VarChar(20)
+  lastMessage     String            @default("") @db.VarChar(255)
+  lastAt          DateTime          @default(now())
+  unreadAdmin     Int               @default(0)
+  unreadMember    Int               @default(0)
+  assignedStaffId String?
+  assignedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  messages        ChatLine[]
+  escalations     AdminEscalation[]
+  assignedStaff   Staff?            @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+
+  @@index([assignedStaffId])
+  @@index([status])
+}
+
+/// sender: MEMBER (user), STAFF (staff assister) or ADMIN.
+model ChatLine {
+  id         String     @id @default(cuid())
+  threadId   String
+  thread     ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender     String     @db.VarChar(10)
+  senderId   String?    @map("sender_id")
+  senderName String?    @map("sender_name") @db.VarChar(120)
+  body       String     @default("") @db.Text
+  imageUrl   String?    @db.Text
+  fileName   String?    @db.VarChar(255)
+  createdAt  DateTime   @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+/// A staff assister handing a chat to the admin desk for review.
+model AdminEscalation {
+  id             String           @id @default(cuid())
+  threadId       String           @map("request_id")
+  staffId        String?          @map("staff_id")
+  /// Staff id of the supervising admin account, or null for the master admin login.
+  adminId        String?          @map("admin_id")
+  adminName      String?          @map("admin_name") @db.VarChar(120)
+  reason         String           @db.Text
+  resolutionNote String?          @map("resolution_note") @db.Text
+  status         EscalationStatus @default(OPEN)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  resolvedAt     DateTime?        @map("resolved_at")
+  thread         ChatThread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  staff          Staff?           @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([threadId])
+  @@map("admin_escalations")
+}
+
+model ServiceHistory {
+  id           String     @id @default(cuid())
+  membershipId String
+  title        String     @db.VarChar(255)
+  notes        String?    @db.Text
+  completedAt  DateTime   @default(now())
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+/// Public "What We Do" concierge categories with admin-managed media.
+model Service {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  tagline     String    @default("") @db.VarChar(500)
+  description String    @db.Text
+  /// JSON array of short deliverable strings.
+  highlights  String    @default("[]") @db.Text
+  icon        String    @default("Sparkles")
+  mediaType   MediaType @default(NONE) @map("media_type")
+  mediaPath   String?   @map("media_path") @db.Text
+  posterPath  String?   @map("poster_path") @db.Text
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0) @map("sort_order")
+  /// Lowest tier allowed to apply; null means every member (rank 1).
+  minTierId   String?   @map("min_plan_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  minTier     Tier?     @relation(fields: [minTierId], references: [id], onDelete: SetNull)
+  requests    ServiceRequest[]
+
+  @@index([minTierId])
+  @@map("services")
+}
+
+enum ServicePaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum ServiceRequestStatus {
+  PENDING_STAFF
+  PENDING_ADMIN
+  APPROVED_IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum UpgradeRequestStatus {
+  PENDING
+  STAFF_APPROVED
+  ADMIN_APPROVED
+  REJECTED
+}
+
+/// A member's application for a tier-gated concierge service. Files live in private storage.
+model ServiceRequest {
+  id               Int                  @id @default(autoincrement())
+  userId           String               @map("user_id")
+  serviceId        String               @map("service_id")
+  membershipId     String?              @map("membership_id")
+  details          String               @default("") @db.Text
+  documentUrl      String               @map("document_url") @db.VarChar(500)
+  documentName     String               @map("document_name") @db.VarChar(255)
+  documentMime     String               @map("document_mime") @db.VarChar(100)
+  receiptUrl       String?              @map("receipt_url") @db.VarChar(500)
+  receiptName      String?              @map("receipt_name") @db.VarChar(255)
+  receiptMime      String?              @map("receipt_mime") @db.VarChar(100)
+  paymentReference String?              @map("payment_reference") @db.VarChar(120)
+  paymentStatus    ServicePaymentStatus @default(PENDING) @map("payment_status")
+  requestStatus    ServiceRequestStatus @default(PENDING_STAFF) @map("request_status")
+  staffReviewerId  String?              @map("staff_reviewer_id")
+  staffReviewer    String?              @map("staff_reviewer_name") @db.VarChar(120)
+  staffReviewedAt  DateTime?            @map("staff_reviewed_at")
+  adminReviewer    String?              @map("admin_reviewer_name") @db.VarChar(120)
+  adminReviewedAt  DateTime?            @map("admin_reviewed_at")
+  reviewNote       String?              @map("review_note") @db.Text
+  /// Booking slip shown to the member, e.g. {"hotelName":"The Ritz","roomNumber":"502","checkIn":"2026-10-20"}.
+  fulfillmentData  Json?                @map("fulfillment_data")
+  fulfilledBy      String?              @map("fulfilled_by_name") @db.VarChar(120)
+  fulfilledAt      DateTime?            @map("fulfilled_at")
+  completedBy      String?              @map("completed_by_name") @db.VarChar(120)
+  completedAt      DateTime?            @map("completed_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+  member           Member               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service          Service              @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  membership       Membership?          @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
+  @@index([requestStatus])
+  @@index([userId])
+  @@index([serviceId])
+  @@map("service_requests")
+}
+
+/// In-app messages for a member (request approved, booking slip issued, ...).
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  title     String   @db.VarChar(150)
+  message   String   @db.Text
+  /// Where the member lands when opening the notification.
+  link      String?  @db.VarChar(255)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  member    Member   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+/// Tier upgrade application. Executes only after staff then admin approval.
+model MembershipUpgradeRequest {
+  id                  Int                  @id @default(autoincrement())
+  userId              String               @map("user_id")
+  membershipId        String               @map("membership_id")
+  oldTierId           String               @map("old_plan_id")
+  newTierId           String               @map("new_plan_id")
+  additionalAmountDue Decimal              @map("additional_amount_due") @db.Decimal(12, 2)
+  currency            String               @default("GBP") @db.VarChar(8)
+  isWithin3Days       Boolean              @map("is_within_3_days")
+  daysSinceStart      Int                  @map("days_since_start")
+  paymentReference    String?              @map("payment_reference") @db.VarChar(120)
+  receiptUrl          String?              @map("receipt_url") @db.VarChar(500)
+  receiptName         String?              @map("receipt_name") @db.VarChar(255)
+  receiptMime         String?              @map("receipt_mime") @db.VarChar(100)
+  paymentStatus       ServicePaymentStatus @default(PENDING) @map("payment_status")
+  status              UpgradeRequestStatus @default(PENDING)
+  staffReviewerId     String?              @map("staff_reviewer_id")
+  staffReviewer       String?              @map("staff_reviewer_name") @db.VarChar(120)
+  staffReviewedAt     DateTime?            @map("staff_reviewed_at")
+  adminReviewer       String?              @map("admin_reviewer_name") @db.VarChar(120)
+  adminReviewedAt     DateTime?            @map("admin_reviewed_at")
+  reviewNote          String?              @map("review_note") @db.Text
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  member              Member               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membership          Membership           @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  oldTier             Tier                 @relation("UpgradeOldTier", fields: [oldTierId], references: [id])
+  newTier             Tier                 @relation("UpgradeNewTier", fields: [newTierId], references: [id])
+
+  @@index([status])
+  @@index([userId])
+  @@index([membershipId])
+  @@map("membership_upgrade_requests")
+}
+
+/// Member KYC files. `filePath` is relative to the private storage root and never web-served directly.
+model MemberDocument {
+  id           String         @id @default(cuid())
+  memberId     String         @map("user_id")
+  documentType String         @map("document_type")
+  filePath     String         @map("file_path") @db.VarChar(500)
+  originalName String         @map("original_name") @db.VarChar(255)
+  mimeType     String         @map("mime_type")
+  sizeBytes    Int            @map("size_bytes")
+  status       DocumentStatus @default(PENDING)
+  reviewNote   String?        @map("review_note") @db.Text
+  reviewedBy   String?        @map("reviewed_by")
+  reviewedAt   DateTime?      @map("reviewed_at")
+  uploadedAt   DateTime       @default(now()) @map("uploaded_at")
+  member       Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@map("member_documents")
+}
+
+/// Desk accounts. role STAFF = staff assister (staff portal), ADMIN = supervisor (admin panel).
+model Staff {
+  id             String             @id @default(cuid())
+  staffCode      String             @unique @map("staff_code")
+  fullName       String             @map("full_name")
+  email          String             @unique
+  phone          String?
+  passwordHash   String             @map("password_hash")
+  role           UserRole           @default(STAFF)
+  status         StaffStatus        @default(ACTIVE)
+  region         String             @default("")
+  address        String             @default("") @db.Text
+  dateOfBirth    DateTime?          @map("date_of_birth") @db.Date
+  /// JSON array of service category titles this staff member covers.
+  categories     String             @default("[]") @db.Text
+  notes          String             @default("") @db.Text
+  /// Bumped on deactivate / role change / password reset so existing sessions stop validating.
+  sessionVersion Int                @default(0) @map("session_version")
+  lastLoginAt    DateTime?          @map("last_login_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  documents      StaffDocument[]
+  threads        ChatThread[]
+  requests       ConciergeRequest[]
+  escalations    AdminEscalation[]
+
+  @@map("staff")
+}
+
+model StaffDocument {
+  id           String         @id @default(cuid())
+  staffId      String         @map("staff_id")
+  documentType String         @map("document_type")
+  filePath     String         @map("file_path") @db.VarChar(500)
+  originalName String         @map("original_name") @db.VarChar(255)
+  mimeType     String         @map("mime_type")
+  sizeBytes    Int            @map("size_bytes")
+  status       DocumentStatus @default(PENDING)
+  uploadedBy   String         @default("staff") @map("uploaded_by")
+  reviewNote   String?        @map("review_note") @db.Text
+  reviewedAt   DateTime?      @map("reviewed_at")
+  uploadedAt   DateTime       @default(now()) @map("uploaded_at")
+  staff        Staff          @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@map("staff_documents")
+}

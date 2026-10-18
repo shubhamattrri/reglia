@@ -1,0 +1,16 @@
+node_modules
+.next
+.env
+.env.local
+prisma/dev.db
+prisma/dev.db-journal
+prisma/dev.db-shm
+prisma/dev.db-wal
+prisma/*.db
+prisma/*.db-*
+data/private
+data/site-settings.json
+tsconfig.tsbuildinfo
+next-env.d.ts
+*.tmp.ts
+*.log

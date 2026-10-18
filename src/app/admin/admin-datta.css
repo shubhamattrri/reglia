@@ -1,0 +1,1036 @@
+@keyframes rainbow {
+  0% {
+    background-position: 0%;
+  }
+  100% {
+    background-position: 200%;
+  }
+}
+
+/* Admin visual system — light grouped sidebar + settings rail */
+.datta-admin {
+  --da-primary: #8a5a2e;
+  --da-primary-soft: rgba(138, 90, 46, 0.12);
+  --da-sidebar: #f3ebdd;
+  --da-brand: #f3ebdd;
+  --da-body: #f8f3ea;
+  --da-card: #ffffff;
+  --da-text: #1d2630;
+  --da-muted: #5b6b79;
+  --da-header: var(--da-sidebar);
+  /* Grid lines follow the admin accent so they stay visible on any theme. */
+  --da-border: color-mix(in srgb, var(--da-primary) 24%, #ffffff);
+  --da-line-soft: color-mix(in srgb, var(--da-primary) 18%, #ffffff);
+  --da-line: color-mix(in srgb, var(--da-primary) 32%, #ffffff);
+  --da-line-strong: color-mix(in srgb, var(--da-primary) 55%, #ffffff);
+  --da-sidebar-w: 260px;
+  --da-settings-w: 280px;
+  --da-header-h: 70px;
+  min-height: 100svh;
+  background: var(--da-body);
+  color: var(--da-text);
+  font-family: Inter, Manrope, system-ui, sans-serif;
+}
+
+.datta-admin a {
+  color: inherit;
+}
+
+.datta-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: var(--da-sidebar-w);
+  max-width: min(var(--da-sidebar-w), 86vw);
+  background: var(--da-sidebar);
+  color: var(--da-text);
+  border-right: 1px solid var(--da-border);
+  transform: translateX(0);
+  transition: transform 0.25s ease;
+}
+
+.datta-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: var(--da-header-h);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--da-border);
+  background: transparent;
+}
+
+.datta-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--da-text);
+  font-size: 11px;
+  font-weight: 700;
+  object-fit: contain;
+}
+
+.datta-badge {
+  display: inline-flex;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #facc15;
+  color: #1d2630;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.datta-btn-rainbow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--da-button-bg, var(--da-primary));
+  color: var(--da-button-text, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(29, 38, 48, 0.08);
+}
+
+.datta-btn-rainbow::before {
+  content: none;
+}
+
+.datta-caption {
+  padding: 16px 18px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.datta-nav {
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px 0 16px;
+}
+
+.datta-nav-group + .datta-nav-group {
+  margin-top: 4px;
+}
+
+.datta-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1px 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.datta-nav a:hover {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--da-text);
+}
+
+.datta-nav a.is-active {
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+}
+
+.datta-nav a.is-active svg {
+  color: var(--da-primary);
+}
+
+.datta-sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  margin: 0 10px 12px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid var(--da-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.datta-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.datta-side-link {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--da-muted);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.datta-side-link:hover {
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+}
+
+/* Settings secondary rail */
+.datta-settings {
+  display: grid;
+  grid-template-columns: minmax(220px, var(--da-settings-w)) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.datta-settings-nav {
+  padding: 14px 10px;
+  border: 1px solid var(--da-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 6px -1px rgba(59, 40, 25, 0.1);
+}
+
+.datta-settings-head {
+  padding: 2px 8px 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--da-line-soft);
+}
+
+.datta-settings-group + .datta-settings-group {
+  margin-top: 14px;
+}
+
+.datta-settings-caption {
+  margin: 0 0 6px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.datta-settings-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--da-text);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.datta-settings-link:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.datta-settings-link.is-active {
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+}
+
+.datta-settings-link.is-active .datta-settings-icon {
+  background: #fff;
+  color: var(--da-primary);
+}
+
+.datta-settings-link.is-active span span:last-child {
+  color: color-mix(in srgb, var(--da-primary) 75%, #ffffff);
+}
+
+.datta-settings-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--da-primary) 8%, #ffffff);
+  color: color-mix(in srgb, var(--da-primary) 70%, #64748b);
+}
+
+.datta-settings-workspace {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .datta-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .datta-settings-nav .datta-settings-group > div {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 4px;
+  }
+
+  .datta-settings-nav .datta-settings-group > div > * + * {
+    margin-top: 0;
+  }
+}
+
+.datta-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: var(--da-header-h);
+  height: auto;
+  padding: 12px 20px;
+  margin-left: var(--da-sidebar-w);
+  background: color-mix(in srgb, var(--da-header) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--da-line);
+  box-shadow: 0 1px 20px rgba(59, 40, 25, 0.08);
+}
+
+.datta-main {
+  margin-left: var(--da-sidebar-w);
+  min-height: calc(100svh - var(--da-header-h));
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 24px;
+}
+
+.datta-admin h1,
+.datta-admin h2,
+.datta-admin h3,
+.datta-admin p,
+.datta-admin label {
+  overflow-wrap: anywhere;
+  /* Style only: the `text-wrap` shorthand would also reset the wrap mode and break `truncate`. */
+  text-wrap-style: pretty;
+}
+
+.datta-admin table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+}
+
+/* Clearly ruled tables: every row and column is separated. */
+.datta-admin thead th {
+  border-bottom: 2px solid var(--da-line-strong);
+  vertical-align: bottom;
+}
+
+.datta-admin tbody tr {
+  border-top: 1px solid var(--da-line) !important;
+}
+
+.datta-admin tbody tr:first-child {
+  border-top: 0 !important;
+}
+
+.datta-admin tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--da-body) 70%, #ffffff);
+}
+
+.datta-admin tbody tr:hover {
+  background: var(--da-primary-soft);
+}
+
+.datta-admin th + th,
+.datta-admin td + td {
+  border-left: 1px solid var(--da-line-soft);
+}
+
+.datta-admin .datta-thead {
+  background: var(--da-primary);
+  color: var(--da-button-text, #fff);
+}
+
+.datta-admin .border-\[\#f3f5f7\],
+.datta-admin .border-\[\#e7eaee\],
+.datta-admin .border-\[\#eef1f4\],
+.datta-admin .border-\[\#dbe0e5\],
+.datta-admin .border-\[\#e2e8f0\] {
+  border-color: var(--da-line) !important;
+}
+
+.datta-admin .ring-\[\#dbe0e5\],
+.datta-admin .ring-\[\#e7eaee\] {
+  --tw-ring-color: var(--da-line) !important;
+}
+
+/* Status tab bar used above admin lists. */
+.datta-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 2px solid var(--da-line);
+  scrollbar-width: none;
+}
+
+.datta-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.datta-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: -2px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--da-muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.datta-tab:hover {
+  color: var(--da-text);
+}
+
+.datta-tab.is-active {
+  border-bottom-color: var(--da-primary);
+  color: var(--da-primary);
+}
+
+.datta-tab-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+  font-size: 11px;
+  text-align: center;
+}
+
+.datta-tab.is-active .datta-tab-count {
+  background: var(--da-primary);
+  color: var(--da-button-text, #fff);
+}
+
+/* Centered dialog for edit forms. */
+.datta-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 6vh 16px 24px;
+  background: rgba(28, 22, 16, 0.5);
+}
+
+.datta-modal-panel {
+  width: 100%;
+  max-width: 560px;
+  padding: 22px;
+  border: 1px solid var(--da-line);
+  border-radius: 14px;
+  background: var(--da-card);
+  box-shadow: 0 24px 60px -20px rgba(28, 22, 16, 0.45);
+}
+
+.datta-admin .overflow-x-auto,
+.datta-admin table {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Sidebar waiting-count badge. */
+.datta-nav-count {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Destructive-action confirmation: centred icon, title, copy, two buttons. */
+.datta-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(28, 22, 16, 0.5);
+}
+
+.datta-confirm-panel {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 24px 22px;
+  border-radius: 16px;
+  background: var(--da-card);
+  box-shadow: 0 24px 60px -20px rgba(28, 22, 16, 0.5);
+  text-align: center;
+}
+
+.datta-confirm-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: #fdecec;
+  color: #e5484d;
+}
+
+.datta-confirm-icon.is-primary {
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+}
+
+.datta-confirm-title {
+  color: var(--da-text);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.datta-confirm-text {
+  margin-top: 8px;
+  color: var(--da-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap-style: pretty;
+}
+
+.datta-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.datta-confirm-actions .datta-btn {
+  height: 40px;
+}
+
+.datta-btn.datta-btn-solid-danger {
+  background: #e5484d;
+  color: #fff;
+}
+
+.datta-btn.datta-btn-solid-danger:hover:not(:disabled) {
+  background: #d13a3f;
+}
+
+.datta-btn.datta-btn-outline {
+  border: 1px solid var(--da-border);
+  background: var(--da-card);
+  color: var(--da-text);
+  box-shadow: none;
+}
+
+.datta-btn.datta-btn-outline:hover:not(:disabled) {
+  background: #f6f7f9;
+}
+
+/* Data tables: rows and columns, horizontal scroll on narrow screens. */
+.datta-table-wrap {
+  overflow-x: auto;
+  border-top: 1px solid var(--da-line);
+}
+
+.datta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--da-text);
+}
+
+.datta-table th {
+  padding: 10px 14px;
+  background: #f6f7f9;
+  color: var(--da-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.datta-table td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--da-line);
+  vertical-align: middle;
+}
+
+.datta-admin .datta-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--da-body) 30%, #ffffff);
+}
+
+.datta-admin .datta-table tbody tr:hover {
+  background: color-mix(in srgb, var(--da-body) 60%, #ffffff);
+}
+
+.datta-table .is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.datta-table .is-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.datta-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--da-muted);
+  cursor: pointer;
+}
+
+.datta-icon-btn:hover:not(:disabled) {
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+}
+
+.datta-icon-btn.is-danger:hover:not(:disabled) {
+  background: #fdecec;
+  color: #c43c3c;
+}
+
+.datta-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Search field with a leading icon. */
+.datta-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.datta-search svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--da-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.datta-search .datta-input {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  padding-left: 36px;
+}
+
+.datta-thumb {
+  flex-shrink: 0;
+  width: 44px;
+  height: 32px;
+  border-radius: 6px;
+  background: #eef1f5;
+  object-fit: cover;
+}
+
+.datta-card {
+  min-width: 0;
+  background: var(--da-card);
+  border: 1px solid var(--da-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px -1px rgba(59, 40, 25, 0.1);
+}
+
+/* Compact stat strip: 2 → 3 → 6 across; the 1px gap draws the dividers. */
+.datta-flat {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--da-border);
+}
+
+.datta-flat-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--da-card);
+}
+
+.datta-flat-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+}
+
+.datta-flat-label {
+  overflow: hidden;
+  color: var(--da-muted);
+  font-size: 12px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datta-flat-value {
+  overflow: hidden;
+  color: var(--da-text);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .datta-flat {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .datta-flat {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.datta-flat.is-three {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 480px) {
+  .datta-flat.is-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.datta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--da-button-bg, var(--da-primary));
+  color: var(--da-button-text, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(29, 38, 48, 0.08);
+}
+
+.datta-btn-ghost {
+  background: var(--da-primary-soft);
+  color: var(--da-primary);
+  box-shadow: none;
+}
+
+.datta-btn-danger {
+  background: #fdecec;
+  color: #c43c3c;
+  box-shadow: none;
+}
+
+.datta-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.datta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.datta-pill-pending {
+  background: #fff6db;
+  color: #a26b00;
+}
+
+.datta-pill-verified {
+  background: #e3f7ec;
+  color: #14804a;
+}
+
+.datta-pill-rejected {
+  background: #fdecec;
+  color: #c43c3c;
+}
+
+.datta-pill-muted {
+  background: #eef1f5;
+  color: #5b6b79;
+}
+
+select.datta-pill {
+  appearance: none;
+  border: 1px solid transparent;
+  padding: 3px 24px 3px 10px;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 12px) 52%, calc(100% - 8px) 52%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  outline: none;
+}
+
+select.datta-pill:focus-visible {
+  border-color: currentColor;
+}
+
+select.datta-pill:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.datta-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.datta-switch-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #e2aaaa;
+  transition: background 0.2s;
+}
+
+.datta-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.datta-switch[aria-checked="true"] .datta-switch-track {
+  background: #14804a;
+}
+
+.datta-switch[aria-checked="true"] .datta-switch-track::after {
+  transform: translateX(14px);
+}
+
+.datta-switch:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.datta-auth {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(114, 103, 239, 0.18), transparent 50%),
+    linear-gradient(160deg, #eef1f6 0%, #f7f8fb 55%, #e9edf5 100%);
+}
+
+.datta-auth-card {
+  width: min(420px, calc(100vw - 32px));
+  padding: 36px 32px;
+  text-align: center;
+}
+
+.datta-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--da-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--da-text);
+  padding: 11px 14px;
+  font-size: 14px;
+  outline: none;
+}
+
+.datta-input:focus {
+  border-color: var(--da-primary);
+  box-shadow: 0 0 0 3px var(--da-primary-soft);
+}
+
+/* Keep existing admin pages readable on the light Datta canvas */
+.datta-admin .border-champagne\/10,
+.datta-admin .border-champagne\/15,
+.datta-admin .border-champagne\/20,
+.datta-admin .border-champagne\/25,
+.datta-admin .border-champagne\/30,
+.datta-admin .border-champagne\/40,
+.datta-admin .border-warm-white\/10,
+.datta-admin .border-warm-white\/15,
+.datta-admin .border-warm-white\/20 {
+  border-color: var(--da-border) !important;
+}
+
+.datta-admin .bg-ink,
+.datta-admin .bg-ink-deep,
+.datta-admin .bg-ink-deep\/40,
+.datta-admin .bg-ink-deep\/50,
+.datta-admin .bg-ink-deep\/60 {
+  background: #fff !important;
+  color: var(--da-text);
+}
+
+.datta-admin .text-champagne,
+.datta-admin .text-champagne\/70,
+.datta-admin .text-champagne\/80 {
+  color: var(--da-primary) !important;
+}
+
+.datta-admin .bg-champagne\/10 {
+  background: var(--da-primary-soft) !important;
+}
+
+.datta-admin .text-warm-white,
+.datta-admin .text-warm-white\/80,
+.datta-admin .font-display:not([data-card-back] *) {
+  color: var(--da-text) !important;
+}
+
+.datta-admin .text-warm-white\/35,
+.datta-admin .text-warm-white\/40,
+.datta-admin .text-warm-white\/45,
+.datta-admin .text-warm-white\/50,
+.datta-admin .text-warm-white\/55,
+.datta-admin .text-warm-white\/60 {
+  color: var(--da-muted) !important;
+}
+
+.datta-admin input,
+.datta-admin select,
+.datta-admin textarea {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--da-text);
+}
+
+.datta-admin option {
+  color: #1d2630;
+  background: #fff;
+}
+
+.datta-overlay {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .datta-sidebar {
+    transform: translateX(-105%);
+  }
+
+  .datta-admin.is-nav-open .datta-sidebar {
+    transform: translateX(0);
+  }
+
+  .datta-header,
+  .datta-main {
+    margin-left: 0;
+  }
+
+  .datta-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(28, 35, 47, 0.45);
+  }
+
+  .datta-admin.is-nav-open .datta-overlay {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .datta-main {
+    padding: 16px 14px 28px;
+  }
+
+  .datta-header {
+    padding: 10px 12px;
+  }
+
+  .datta-auth-card {
+    padding: 24px 16px;
+  }
+
+  .datta-flat-cell {
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .datta-main {
+    padding: 12px 10px 24px;
+  }
+}

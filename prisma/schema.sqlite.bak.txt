@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  ACTIVE
+  CANCELLED
+  SUSPENDED
+  EXPIRED
+  REVOKED
+}
+
+enum CardStatus {
+  ACTIVE
+  LOST
+  REPLACED
+  REVOKED
+}
+
+enum RequestStatus {
+  SUBMITTED
+  QUOTE
+  APPROVAL
+  PAYMENT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageRole {
+  MEMBER
+  CONCIERGE
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  MEMBER
+}
+
+enum StaffStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MediaType {
+  NONE
+  IMAGE
+  VIDEO
+}
+
+model Tier {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  subtitle    String
+  summary     String
+  accent      String
+  metalFrom   String
+  metalTo     String
+  frontImage  String?
+  backImage   String?
+  tagline     String        @default("")
+  motto       String        @default("")
+  price       Int           @default(0)
+  currency    String        @default("GBP")
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  features    TierFeature[]
+  memberships Membership[]
+}
+
+model TierFeature {
+  id        String @id @default(cuid())
+  tierId    String
+  label     String
+  icon      String @default("Sparkles")
+  sortOrder Int    @default(0)
+  tier      Tier   @relation(fields: [tierId], references: [id], onDelete: Cascade)
+}
+
+model Member {
+  id           String           @id @default(cuid())
+  regaliaId    String           @unique
+  fullName     String
+  email        String           @unique
+  passwordHash String?
+  phone        String?
+  createdAt    DateTime         @default(now())
+  memberships  Membership[]
+  preferences  Preference[]
+  messages     Message[]
+  payments     Payment[]
+  chatThread   ChatThread?
+  documents    MemberDocument[]
+}
+
+model Membership {
+  id              String             @id @default(cuid())
+  memberId        String
+  tierId          String
+  membershipNo    String             @unique
+  membershipCode  String             @unique
+  status          MembershipStatus   @default(PENDING)
+  issuedAt        DateTime           @default(now())
+  validThru       DateTime
+  renewedAt       DateTime?
+  approvedAt      DateTime?
+  cancelledAt     DateTime?
+  applicationNote String             @default("")
+  accessLevel     String             @default("STANDARD")
+  conciergeLine   String             @default("+44 20 7946 0184")
+  member          Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tier            Tier               @relation(fields: [tierId], references: [id])
+  cards           PhysicalCard[]
+  requests        ConciergeRequest[]
+  bookings        Booking[]
+  history         ServiceHistory[]
+  payments        Payment[]
+}
+
+model PhysicalCard {
+  id           String     @id @default(cuid())
+  membershipId String
+  serialNumber String     @unique
+  qrToken      String     @unique
+  nfcToken     String     @unique
+  status       CardStatus @default(ACTIVE)
+  issuedAt     DateTime   @default(now())
+  replacedById String?
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+model ConciergeRequest {
+  id              String        @id @default(cuid())
+  membershipId    String
+  title           String
+  category        String
+  details         String
+  status          RequestStatus @default(SUBMITTED)
+  quoteAmount     Float?
+  quoteNotes      String?
+  invoiceRef      String?
+  paidAmount      Float?
+  priority        String        @default("NORMAL")
+  staffNote       String?
+  assignedStaffId String?
+  assignedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  membership      Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  assignedStaff   Staff?        @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+
+  @@index([assignedStaffId])
+}
+
+model ServiceCategory {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  name      String
+  icon      String  @default("Sparkles")
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+model VerificationLog {
+  id         String   @id @default(cuid())
+  method     String
+  outcome    String
+  tokenHint  String
+  cardId     String?
+  serial     String?
+  regaliaId  String?
+  memberName String?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  meta      String?
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id           String     @id @default(cuid())
+  membershipId String
+  title        String
+  category     String
+  vendor       String?
+  date         DateTime?
+  status       String     @default("CONFIRMED")
+  amount       Float?
+  createdAt    DateTime   @default(now())
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  memberId  String
+  fromRole  MessageRole
+  body      String
+  createdAt DateTime    @default(now())
+  member    Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model Preference {
+  id       String @id @default(cuid())
+  memberId String
+  key      String
+  value    String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+
+model Payment {
+  id           String         @id @default(cuid())
+  memberId     String?
+  member       Member?        @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  membershipId String?
+  membership   Membership?    @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  amount       Float
+  currency     String         @default("GBP")
+  status       String         @default("PENDING")
+  method       String         @default("BANK")
+  gateway      String         @default("MANUAL")
+  gatewayRef   String?
+  reference    String?
+  note         String?
+  webhookAt    DateTime?
+  verifiedAt   DateTime?
+  verifiedBy   String?
+  overrideNote String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  audits       PaymentAudit[]
+}
+
+model PaymentAudit {
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  action     String
+  fromStatus String
+  toStatus   String
+  actor      String
+  note       String?
+  createdAt  DateTime @default(now())
+}
+
+model ChatThread {
+  id              String     @id @default(cuid())
+  memberId        String     @unique
+  member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  status          String     @default("REQUESTED")
+  lastMessage     String     @default("")
+  lastAt          DateTime   @default(now())
+  unreadAdmin     Int        @default(0)
+  unreadMember    Int        @default(0)
+  assignedStaffId String?
+  assignedAt      DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  messages        ChatLine[]
+  assignedStaff   Staff?     @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+
+  @@index([assignedStaffId])
+}
+
+model ChatLine {
+  id        String     @id @default(cuid())
+  threadId  String
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender    String
+  body      String     @default("")
+  imageUrl  String?
+  fileName  String?
+  createdAt DateTime   @default(now())
+}
+
+model ServiceHistory {
+  id           String     @id @default(cuid())
+  membershipId String
+  title        String
+  notes        String?
+  completedAt  DateTime   @default(now())
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+/// Public "What We Do" concierge categories with admin-managed media.
+model Service {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  tagline     String    @default("")
+  description String
+  /// JSON array of short deliverable strings.
+  highlights  String    @default("[]")
+  icon        String    @default("Sparkles")
+  mediaType   MediaType @default(NONE) @map("media_type")
+  mediaPath   String?   @map("media_path")
+  posterPath  String?   @map("poster_path")
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("services")
+}
+
+/// Member KYC files. `filePath` is relative to the private storage root and never web-served directly.
+model MemberDocument {
+  id           String         @id @default(cuid())
+  memberId     String         @map("user_id")
+  documentType String         @map("document_type")
+  filePath     String         @map("file_path")
+  originalName String         @map("original_name")
+  mimeType     String         @map("mime_type")
+  sizeBytes    Int            @map("size_bytes")
+  status       DocumentStatus @default(PENDING)
+  reviewNote   String?        @map("review_note")
+  reviewedBy   String?        @map("reviewed_by")
+  reviewedAt   DateTime?      @map("reviewed_at")
+  uploadedAt   DateTime       @default(now()) @map("uploaded_at")
+  member       Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@map("member_documents")
+}
+
+model Staff {
+  id             String             @id @default(cuid())
+  staffCode      String             @unique @map("staff_code")
+  fullName       String             @map("full_name")
+  email          String             @unique
+  phone          String?
+  passwordHash   String             @map("password_hash")
+  role           UserRole           @default(STAFF)
+  status         StaffStatus        @default(ACTIVE)
+  region         String             @default("")
+  /// JSON array of service category titles this staff member covers.
+  categories     String             @default("[]")
+  notes          String             @default("")
+  /// Bumped on suspend / password reset so existing sessions stop validating.
+  sessionVersion Int                @default(0) @map("session_version")
+  lastLoginAt    DateTime?          @map("last_login_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  documents      StaffDocument[]
+  threads        ChatThread[]
+  requests       ConciergeRequest[]
+
+  @@map("staff")
+}
+
+model StaffDocument {
+  id           String         @id @default(cuid())
+  staffId      String         @map("staff_id")
+  documentType String         @map("document_type")
+  filePath     String         @map("file_path")
+  originalName String         @map("original_name")
+  mimeType     String         @map("mime_type")
+  sizeBytes    Int            @map("size_bytes")
+  status       DocumentStatus @default(PENDING)
+  uploadedBy   String         @default("staff") @map("uploaded_by")
+  reviewNote   String?        @map("review_note")
+  reviewedAt   DateTime?      @map("reviewed_at")
+  uploadedAt   DateTime       @default(now()) @map("uploaded_at")
+  staff        Staff          @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@map("staff_documents")
+}
